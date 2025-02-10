@@ -21,7 +21,7 @@ internal class StashTabNameCoRoutine
     {
         Main.Settings.AllStashNames = [.. newNames];
 
-        if (newNames.Count < 4)
+        if (newNames.Count < 4 && !Main.Settings.UseGuildStash.Value)
         {
             Main.LogError("Can't parse names.");
             return;
@@ -118,7 +118,7 @@ internal class StashTabNameCoRoutine
             while (!Main.GameController.Game.IngameState.InGame)
                 await Task.Delay(2000);
 
-            var stashPanel = Main.GameController.Game.IngameState?.IngameUi?.StashElement;
+            var stashPanel = Main.StashElement;
 
             while (stashPanel == null || !stashPanel.IsVisibleLocal)
                 await Task.Delay(1000);

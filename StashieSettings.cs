@@ -16,6 +16,10 @@ public class StashieSettings : ISettings
     [Menu("Filter File")] public ListNode FilterFile { get; set; } = new();
 
     [Menu("Stash Hotkey")] public HotkeyNode DropHotkey { get; set; } = Keys.F3;
+    
+    [Menu("Use Guild Stash.",
+        "Use Guild Stash Instead of Stash")]
+    public ToggleNode UseGuildStash { get; set; } = new(false);
 
     [JsonIgnore]
     [Menu("Debug Inspect Items", "Inspect inventory items as ItemFilterLibrary items.")]

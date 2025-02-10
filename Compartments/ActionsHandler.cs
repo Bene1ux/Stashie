@@ -15,7 +15,7 @@ internal class ActionsHandler
 {
     public static int GetIndexOfCurrentVisibleTab()
     {
-        return Main.GameController.Game.IngameState.IngameUi.StashElement.IndexVisibleStash;
+        return Main.StashElement.IndexVisibleStash;
     }
 
     public static void CleanUp()
@@ -110,7 +110,7 @@ internal class ActionsHandler
 
     public static InventoryType GetTypeOfCurrentVisibleStash()
     {
-        var stashPanelVisibleStash = Main.GameController.Game.IngameState.IngameUi?.StashElement?.VisibleStash;
+        var stashPanelVisibleStash = Main.StashElement.VisibleStash;
         return stashPanelVisibleStash?.InvType ?? InventoryType.InvalidInventory;
     }
 
@@ -144,7 +144,7 @@ internal class ActionsHandler
                 await SwitchToTab(stashResult.StashIndex);
 
             await TaskUtils.CheckEveryFrameWithThrow(
-                () => Main.GameController.IngameState.IngameUi.StashElement.AllInventories[Main.VisibleStashIndex] !=
+                () => Main.StashElement.AllInventories[Main.VisibleStashIndex] !=
                       null,
                 new CancellationTokenSource(Main.Settings.StashingCancelTimer.Value).Token);
             //maybe replace waittime with Setting option

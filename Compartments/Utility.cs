@@ -36,8 +36,8 @@ internal class Utility
         try
         {
             StashieCore.Main.Settings.TabToVisitWhenDone.Max =
-                (int)StashieCore.Main.GameController.Game.IngameState.IngameUi.StashElement.TotalStashes - 1;
-            var names = StashieCore.Main.GameController.Game.IngameState.IngameUi.StashElement.AllStashNames;
+                (int)StashieCore.Main.StashElement.TotalStashes - 1;
+            var names = StashieCore.Main.StashElement.AllStashNames;
             StashTabNameCoRoutine.UpdateStashNames(names);
         }
         catch (Exception e)

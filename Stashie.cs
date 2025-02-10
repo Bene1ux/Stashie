@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using ExileCore2;
+using ExileCore2.PoEMemory;
+using ExileCore2.PoEMemory.Elements;
 using ImGuiNET;
 using Stashie.Classes;
 using Stashie.Compartments;
@@ -15,6 +17,10 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
     public const string CoroutineName = "Drop To Stash";
     public const string StashTabsNameChecker = "Stash Tabs Name Checker";
     public static StashieCore Main;
+
+    public StashElement StashElement => Settings.UseGuildStash.Value
+        ? GameController.Game.IngameState.IngameUi.GuildStashElement
+        : GameController.Game.IngameState.IngameUi.StashElement;
 
     public static List<string> RenamedAllStashNames;
     public readonly Stopwatch DebugTimer = new();
@@ -45,6 +51,16 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
 
             Utility.SetupOrClose();
         };
+        
+        Settings.UseGuildStash.OnValueChanged += (sender, b) =>
+        {
+            if (b)
+                StashTabNameCoRoutine.InitStashTabNameCoRoutine();
+            else
+                TaskRunner.Stop(StashTabsNameChecker);
+
+            Utility.SetupOrClose();
+        };
 
         StashieEditorHandler.FileSaveName = Settings.ConfigLastSaved;
         StashieEditorHandler.SelectedFileName = Settings.ConfigLastSaved;
@@ -56,6 +72,12 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
 
         Settings.DropHotkey.OnValueChanged += () => { Input.RegisterKey(Settings.DropHotkey); };
         Settings.FilterFile.OnValueSelected = _ => FilterManager.LoadCustomFilters();
+        
+        
+        GameController.PluginBridge.SaveMethod("Stashie.StartDropItemsToStash", () => ActionCoRoutine.StartDropItemsToStashCoroutine());
+        GameController.PluginBridge.SaveMethod("Stashie.StopDropItemsToStash", () => ActionCoRoutine.StopCoroutine("Stashie_DropItemsToStash"));
+        GameController.PluginBridge.SaveMethod("Stashie.IsStashieActive", () => TaskRunner.Has("Stashie_DropItemsToStash"));
+        
 
         return true;
     }
@@ -144,6 +166,6 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
     public bool StashingRequirementsMet()
     {
         return GameController.Game.IngameState.IngameUi.InventoryPanel.IsVisible &&
-               GameController.Game.IngameState.IngameUi.StashElement.IsVisibleLocal;
+               StashElement.IsVisibleLocal;
     }
 }
