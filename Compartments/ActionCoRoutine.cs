@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using ExileCore2;
-using ExileCore2.Shared;
+using ExileCore;
+using ExileCore.Shared;
 using static Stashie.StashieCore;
 
 namespace Stashie.Compartments;

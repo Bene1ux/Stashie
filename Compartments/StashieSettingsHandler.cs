@@ -2,10 +2,10 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using ExileCore2;
-using ExileCore2.PoEMemory.Components;
-using ExileCore2.PoEMemory.MemoryObjects;
-using ExileCore2.Shared.Enums;
+using ExileCore;
+using ExileCore.PoEMemory.Components;
+using ExileCore.PoEMemory.MemoryObjects;
+using ExileCore.Shared.Enums;
 using ImGuiNET;
 using Stashie.Classes;
 using static Stashie.StashieCore;
@@ -145,7 +145,7 @@ public class StashieSettingsHandler
 
         FilterManager.LoadCustomFilters();
         GenerateTabMenu();
-        DebugWindow.LogMsg("Reloaded Stashie config", 2, Color.LimeGreen);
+        DebugWindow.LogMsg("Reloaded Stashie config", 2, SharpDX.Color.LimeGreen);
     }
 
     public static void DrawIgnoredCellsSettings()

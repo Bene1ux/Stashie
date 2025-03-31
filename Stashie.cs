@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ExileCore2;
-using ExileCore2.PoEMemory;
-using ExileCore2.PoEMemory.Elements;
+using ExileCore;
+using ExileCore.PoEMemory;
+using ExileCore.PoEMemory.Elements;
 using ImGuiNET;
 using Stashie.Classes;
 using Stashie.Compartments;
@@ -146,21 +146,23 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
             TaskRunner.Stop(StashTabsNameChecker);
     }
 
-    public override void Tick()
+    public override Job Tick()
     {
         if (!StashingRequirementsMet())
         {
             TaskRunner.Stop("Stashie_DropItemsToStash");
-            return;
+            return null;
         }
 
         if (!Settings.DropHotkey.PressedOnce())
-            return;
+            return null;
 
         if (TaskRunner.Has("Stashie_DropItemsToStash"))
             ActionCoRoutine.StopCoroutine("Stashie_DropItemsToStash");
         else
             ActionCoRoutine.StartDropItemsToStashCoroutine();
+        
+        return null;
     }
 
     public bool StashingRequirementsMet()

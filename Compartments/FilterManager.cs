@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using ExileCore2;
-using ExileCore2.Shared;
+using ExileCore;
+using ExileCore.Shared;
+using ExileCore.Shared.Helpers;
 using ItemFilterLibrary;
 using Stashie.Classes;
 using static Stashie.StashieCore;
@@ -88,7 +89,7 @@ internal class FilterManager
 
         await TaskUtils.CheckEveryFrameWithThrow(() => invItems != null, new CancellationTokenSource(500).Token);
         Main.DropItems = [];
-        Main.ClickWindowOffset = Main.GameController.Window.GetWindowRectangle().TopLeft;
+        Main.ClickWindowOffset = Main.GameController.Window.GetWindowRectangle().TopLeft.ToVector2Num();
 
         foreach (var invItem in invItems)
         {
@@ -99,7 +100,7 @@ internal class FilterManager
                 continue;
 
             var testItem = new ItemData(invItem.Item, Main.GameController);
-            var result = CheckFilters(testItem, invItem.GetClientRect().Center);
+            var result = CheckFilters(testItem, invItem.GetClientRect().Center.ToVector2Num());
             if (result != null)
                 Main.DropItems.Add(result);
         }
@@ -134,7 +135,7 @@ internal class FilterManager
         var invItems = serverData.PlayerInventories[0].Inventory.InventorySlotItems;
 
         Main.DropItems = [];
-        Main.ClickWindowOffset = Main.GameController.Window.GetWindowRectangle().TopLeft;
+        Main.ClickWindowOffset = Main.GameController.Window.GetWindowRectangle().TopLeft.ToVector2Num();
 
         return (from invItem in invItems
             where invItem.Item != null && invItem.Address != 0

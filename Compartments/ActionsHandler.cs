@@ -3,9 +3,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using ExileCore2;
-using ExileCore2.Shared;
-using ExileCore2.Shared.Enums;
+using ExileCore;
+using ExileCore.Shared;
+using ExileCore.Shared.Enums;
 using Stashie.Classes;
 using static Stashie.StashieCore;
 

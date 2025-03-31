@@ -19,15 +19,19 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ExileCore2">
-      <HintPath>$(exileCore2Package)\ExileCore2.dll</HintPath>
+      <HintPath>$(exapipackage)\ExileCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="GameOffsets2">
-      <HintPath>$(exileCore2Package)\GameOffsets2.dll</HintPath>
+      <HintPath>$(exapipackage)\GameOffsets.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ItemFilterLibrary">
-      <HintPath>$(exileCore2Package)\ItemFilterLibrary.dll</HintPath>
+      <HintPath>$(exapipackage)\ItemFilterLibrary.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SharpDX.Mathematics">
+      <HintPath>$(exapipackage)\SharpDX.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

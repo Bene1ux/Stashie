@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using ExileCore2;
+using ExileCore;
 using ItemFilterLibrary;
 using Newtonsoft.Json;
 using Stashie.Classes;

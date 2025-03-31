@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ExileCore2;
-using ExileCore2.Shared;
+using ExileCore;
+using ExileCore.Shared;
 using Stashie.Classes;
 using static Stashie.StashieCore;
 

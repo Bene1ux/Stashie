@@ -1,4 +1,4 @@
-﻿using ExileCore2.Shared.Nodes;
+﻿using ExileCore.Shared.Nodes;
 
 namespace Stashie.Classes;
 
