@@ -68,7 +68,8 @@ internal class FilterManager
         foreach (var subFilter in filter.Filters)
             try
             {
-                if (!subFilter.AllowProcess)
+                //DebugWindow.LogMsg($"{subFilter.FilterName} - {subFilter.AllowProcess}");
+                if (!subFilter.AllowProcess&&(!Main.Settings.UseGuildStash.Value||!Main.Settings.ForceGuildDrop.Value))
                     continue;
 
                 if (filter.CompareItem(itemData, subFilter.CompiledQuery))

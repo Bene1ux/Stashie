@@ -20,6 +20,9 @@ public class StashieSettings : ISettings
     [Menu("Use Guild Stash.",
         "Use Guild Stash Instead of Stash")]
     public ToggleNode UseGuildStash { get; set; } = new(false);
+    [Menu("Force Drop Items to Guild",
+        "Drop items even if ignored")]
+    public ToggleNode ForceGuildDrop { get; set; } = new(true);
 
     [JsonIgnore]
     [Menu("Debug Inspect Items", "Inspect inventory items as ItemFilterLibrary items.")]

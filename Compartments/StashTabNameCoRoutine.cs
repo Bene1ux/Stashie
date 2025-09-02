@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define DebugMode
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ExileCore;
@@ -38,7 +39,7 @@ internal class StashTabNameCoRoutine
             {
                 realStashName += " (" + i + ")";
 #if DebugMode
-                    LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
+                    Main.LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
 #endif
             }
 
@@ -58,7 +59,7 @@ internal class StashTabNameCoRoutine
                     if (lOption.Index != -1) //If the value doesn't exist in list and the value was not Ignore
                     {
 #if DebugMode
-                        LogMessage("Tab renamed : " + lOption.Value + " to " + RenamedAllStashNames[lOption.Index + 1],
+                        Main.LogMessage("Tab renamed : " + lOption.Value + " to " + RenamedAllStashNames[lOption.Index + 1],
                             5);
 #endif
                         if (lOption.Index + 1 >= RenamedAllStashNames.Count)
@@ -82,7 +83,7 @@ internal class StashTabNameCoRoutine
 #if DebugMode
                     if (lOption.Index != inventoryIndex)
                     {
-                        LogMessage("Tab moved: " + lOption.Index + " to " + inventoryIndex, 5);
+                        Main.LogMessage("Tab moved: " + lOption.Index + " to " + inventoryIndex, 5);
                     }
 #endif
                     lOption.Index = inventoryIndex;
