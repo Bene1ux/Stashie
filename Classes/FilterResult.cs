@@ -1,4 +1,4 @@
-﻿using ItemFilterLibrary;
+using ItemFilterLibrary;
 using Stashie.Filter;
 using Vector2N = System.Numerics.Vector2;
 
@@ -8,7 +8,8 @@ public class FilterResult(CustomFilter.Filter filter, ItemData itemData, Vector2
 {
     public CustomFilter.Filter Filter { get; } = filter;
     public ItemData ItemData { get; } = itemData;
-    public int StashIndex { get; } = filter.StashIndexNode.Index;
+    public int StashIndex { get; } = filter.Target.Index;
+    public bool IsGuildTarget { get; } = filter.Target.IsGuild;
     public Vector2N ClickPos { get; } = clickPos;
     public bool SkipSwitchTab { get; } = filter.Affinity ?? false;
     public bool ShiftForStashing { get; } = filter.Shifting ?? false;

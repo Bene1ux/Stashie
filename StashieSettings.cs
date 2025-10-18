@@ -11,18 +11,17 @@ namespace Stashie;
 public class StashieSettings : ISettings
 {
     public List<string> AllStashNames = [];
+    public List<string> AllGuildStashNames = [];
+    
+    // Legacy: kept for migration
     public Dictionary<string, ListIndexNode> CustomFilterOptions = [];
+    
+    // New unified target system
+    public Dictionary<string, StashTarget> CustomFilterTargets = [];
 
     [Menu("Filter File")] public ListNode FilterFile { get; set; } = new();
 
     [Menu("Stash Hotkey")] public HotkeyNode DropHotkey { get; set; } = Keys.F3;
-    
-    [Menu("Use Guild Stash.",
-        "Use Guild Stash Instead of Stash")]
-    public ToggleNode UseGuildStash { get; set; } = new(false);
-    [Menu("Force Drop Items to Guild",
-        "Drop items even if ignored")]
-    public ToggleNode ForceGuildDrop { get; set; } = new(true);
 
     [JsonIgnore]
     [Menu("Debug Inspect Items", "Inspect inventory items as ItemFilterLibrary items.")]

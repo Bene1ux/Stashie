@@ -42,16 +42,16 @@ internal class FilterManager
                 foreach (var customFilter in Main.currentFilter)
                 foreach (var filter in customFilter.Filters)
                 {
-                    if (!Main.Settings.CustomFilterOptions.TryGetValue(customFilter.ParentMenuName + filter.FilterName,
-                            out var indexNodeS))
+                    var filterKey = customFilter.ParentMenuName + filter.FilterName;
+                    
+                    if (!Main.Settings.CustomFilterTargets.TryGetValue(filterKey, out var target))
                     {
-                        indexNodeS = new ListIndexNode { Value = "Ignore", Index = -1 };
-                        Main.Settings.CustomFilterOptions.Add(customFilter.ParentMenuName + filter.FilterName,
-                            indexNodeS);
+                        target = StashTarget.CreateIgnore();
+                        Main.Settings.CustomFilterTargets.Add(filterKey, target);
                     }
 
-                    filter.StashIndexNode = indexNodeS;
-                    Main.SettingsListNodes.Add(indexNodeS);
+                    filter.Target = target;
+                    Main.SettingsTargetNodes.Add(target);
                 }
             }
             else
@@ -69,7 +69,7 @@ internal class FilterManager
             try
             {
                 //DebugWindow.LogMsg($"{subFilter.FilterName} - {subFilter.AllowProcess}");
-                if (!subFilter.AllowProcess&&(!Main.Settings.UseGuildStash.Value||!Main.Settings.ForceGuildDrop.Value))
+                if (!subFilter.AllowProcess)
                     continue;
 
                 if (filter.CompareItem(itemData, subFilter.CompiledQuery))

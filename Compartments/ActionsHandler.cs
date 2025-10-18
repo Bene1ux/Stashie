@@ -15,7 +15,7 @@ internal class ActionsHandler
 {
     public static int GetIndexOfCurrentVisibleTab()
     {
-        return Main.StashElement.IndexVisibleStash;
+        return Main.GetOpenStashElement().IndexVisibleStash;
     }
 
     public static void CleanUp()
@@ -34,13 +34,17 @@ internal class ActionsHandler
                 break;
 
             case string name:
-                if (!RenamedAllStashNames.Contains(name))
+                // Try both local and guild lists
+                var localIndex = RenamedLocalStashNames?.IndexOf(name) ?? -1;
+                var guildIndex = RenamedGuildStashNames?.IndexOf(name) ?? -1;
+                
+                if (localIndex == -1 && guildIndex == -1)
                 {
                     DebugWindow.LogMsg($"{Main.Name}: can't find tab with name '{name}'.");
                     break;
                 }
-
-                var tempIndex = RenamedAllStashNames.IndexOf(name);
+                
+                var tempIndex = localIndex >= 0 ? localIndex : guildIndex;
                 task = () => ActionCoRoutine.ProcessSwitchToTab(tempIndex);
                 DebugWindow.LogMsg($"{Main.Name}: Switching to tab with index: {tempIndex} ('{name}').");
                 break;
@@ -110,7 +114,7 @@ internal class ActionsHandler
 
     public static InventoryType GetTypeOfCurrentVisibleStash()
     {
-        var stashPanelVisibleStash = Main.StashElement.VisibleStash;
+        var stashPanelVisibleStash = Main.GetOpenStashElement().VisibleStash;
         return stashPanelVisibleStash?.InvType ?? InventoryType.InvalidInventory;
     }
 
@@ -124,6 +128,9 @@ internal class ActionsHandler
     {
         Main.PublishEvent("stashie_start_drop_items", null);
 
+        var isGuildOpen = Main.IsGuildStashOpen();
+        var openStashElement = Main.GetOpenStashElement();
+        
         Main.VisibleStashIndex = GetIndexOfCurrentVisibleTab();
         if (Main.VisibleStashIndex < 0)
         {
@@ -131,28 +138,35 @@ internal class ActionsHandler
             return true;
         }
 
-        var itemsSortedByStash = Main.DropItems
-            .OrderBy(x => x.SkipSwitchTab || x.StashIndex == Main.VisibleStashIndex ? 0 : 1).ThenBy(x => x.StashIndex)
+        // Filter items to only those matching the currently open stash type
+        var itemsForCurrentStash = Main.DropItems
+            .Where(x => x.IsGuildTarget == isGuildOpen)
+            .OrderBy(x => x.SkipSwitchTab || x.StashIndex == Main.VisibleStashIndex ? 0 : 1)
+            .ThenBy(x => x.StashIndex)
             .ToList();
 
+        if (itemsForCurrentStash.Count == 0)
+        {
+            Main.LogMessage($"No items to drop to {(isGuildOpen ? "guild" : "personal")} stash.");
+            return true;
+        }
+
         Input.KeyDown(Keys.LControlKey);
-        Main.LogMessage($"Want to drop {itemsSortedByStash.Count} items.");
-        foreach (var stashResult in itemsSortedByStash)
+        Main.LogMessage($"Want to drop {itemsForCurrentStash.Count} items to {(isGuildOpen ? "guild" : "personal")} stash.");
+        
+        foreach (var stashResult in itemsForCurrentStash)
         {
             //move to correct tab
             if (!stashResult.SkipSwitchTab)
                 await SwitchToTab(stashResult.StashIndex);
 
             await TaskUtils.CheckEveryFrameWithThrow(
-                () => Main.StashElement.AllInventories[Main.VisibleStashIndex] !=
-                      null,
+                () => openStashElement.AllInventories[Main.VisibleStashIndex] != null,
                 new CancellationTokenSource(Main.Settings.StashingCancelTimer.Value).Token);
-            //maybe replace waittime with Setting option
 
             await TaskUtils.CheckEveryFrameWithThrow(
                 () => GetTypeOfCurrentVisibleStash() != InventoryType.InvalidInventory,
                 new CancellationTokenSource(Main.Settings.StashingCancelTimer.Value).Token);
-            //maybe replace waittime with Setting option
 
             await StashItem(stashResult);
 

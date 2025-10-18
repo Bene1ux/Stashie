@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.MemoryObjects;
@@ -51,7 +53,22 @@ public class StashieSettingsHandler
 
     public static void GenerateTabMenu()
     {
-        Main.StashTabNamesByIndex = [.. RenamedAllStashNames];
+        // Build combined list: Ignore, [Local] tabs, [Guild] tabs
+        var combinedList = new List<string> { "Ignore" };
+        
+        if (RenamedLocalStashNames != null)
+        {
+            foreach (var tabName in RenamedLocalStashNames)
+                combinedList.Add($"[Local] {tabName}");
+        }
+        
+        if (RenamedGuildStashNames != null)
+        {
+            foreach (var tabName in RenamedGuildStashNames)
+                combinedList.Add($"[Guild] {tabName}");
+        }
+        
+        Main.StashTabNamesByIndex = [.. combinedList];
 
         Main.FilterTabs = null;
 
@@ -61,80 +78,117 @@ public class StashieSettingsHandler
                 ImGui.TextColored(new Vector4N(0f, 1f, 0.022f, 1f), parent.ParentMenuName);
 
                 foreach (var filter in parent.Filters)
-                    if (Main.Settings.CustomFilterOptions.TryGetValue(parent.ParentMenuName + filter.FilterName,
-                            out var indexNode))
+                {
+                    var target = filter.Target;
+                    if (target == null)
                     {
-                        var strId = $"{filter.FilterName}##{parent.ParentMenuName + filter.FilterName}";
+                        target = StashTarget.CreateIgnore();
+                        filter.Target = target;
+                    }
 
-                        ImGui.Columns(2, strId, true);
-                        ImGui.SetColumnWidth(0, 320);
+                    var strId = $"{filter.FilterName}##{parent.ParentMenuName + filter.FilterName}";
 
-                        if (ImGui.Button(strId, new Vector2N(300, 20)))
-                            ImGui.OpenPopup(strId);
+                    ImGui.Columns(2, strId, true);
+                    ImGui.SetColumnWidth(0, 320);
 
-                        ImGui.SameLine();
-                        ImGui.NextColumn();
+                    if (ImGui.Button(strId, new Vector2N(300, 20)))
+                        ImGui.OpenPopup(strId);
 
-                        var item = indexNode.Index + 1;
-                        var filterName = filter.FilterName;
+                    ImGui.SameLine();
+                    ImGui.NextColumn();
 
-                        if (string.IsNullOrWhiteSpace(filterName))
-                            filterName = "Null";
+                    // Find current selection in combined list
+                    var currentIndex = Main.StashTabNamesByIndex.ToList().IndexOf(target.Value);
+                    if (currentIndex < 0) currentIndex = 0; // Default to Ignore
 
-                        if (ImGui.Combo($"##{parent.ParentMenuName + filter.FilterName}", ref item,
-                                Main.StashTabNamesByIndex, Main.StashTabNamesByIndex.Length))
+                    var filterName = filter.FilterName;
+                    if (string.IsNullOrWhiteSpace(filterName))
+                        filterName = "Null";
+
+                    if (ImGui.Combo($"##{parent.ParentMenuName + filter.FilterName}", ref currentIndex,
+                            Main.StashTabNamesByIndex, Main.StashTabNamesByIndex.Length))
+                    {
+                        var newValue = Main.StashTabNamesByIndex[currentIndex];
+                        StashTabNameCoRoutine.OnSettingsStashTargetChanged(target, newValue);
+                    }
+
+                    var specialTag = "";
+
+                    if (filter.Shifting != null && (bool)filter.Shifting) specialTag += "Holds Shift";
+
+                    if (filter.Affinity != null && (bool)filter.Affinity)
+                        specialTag += !string.IsNullOrEmpty(specialTag) ? ", Expects Affinity" : "Expects Affinity";
+
+                    ImGui.SameLine();
+                    ImGui.Text($"{specialTag}");
+
+                    ImGui.NextColumn();
+                    ImGui.Columns(1, "", false);
+                    var pop = true;
+
+                    if (!ImGui.BeginPopupModal(strId, ref pop,
+                            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize))
+                        continue;
+
+                    var x = 0;
+
+                    // Show Ignore button
+                    if (ImGui.Button("Ignore", new Vector2N(100, 20)))
+                    {
+                        StashTabNameCoRoutine.OnSettingsStashTargetChanged(target, "Ignore");
+                        ImGui.CloseCurrentPopup();
+                    }
+                    x++;
+
+                    // Show [Local] section
+                    if (RenamedLocalStashNames != null && RenamedLocalStashNames.Count > 0)
+                    {
+                        if (x % 10 != 0) ImGui.SameLine();
+                        ImGui.TextColored(new Vector4N(0.5f, 0.8f, 1f, 1f), "[Local]");
+                        x++;
+
+                        foreach (var name in RenamedLocalStashNames)
                         {
-                            indexNode.Value = Main.StashTabNamesByIndex[item];
-                            StashTabNameCoRoutine.OnSettingsStashNameChanged(indexNode,
-                                Main.StashTabNamesByIndex[item]);
-                        }
-
-                        var specialTag = "";
-
-                        if (filter.Shifting != null && (bool)filter.Shifting) specialTag += "Holds Shift";
-
-                        if (filter.Affinity != null && (bool)filter.Affinity)
-                            specialTag += !string.IsNullOrEmpty(specialTag) ? ", Expects Affinity" : "Expects Affinity";
-
-                        ImGui.SameLine();
-                        ImGui.Text($"{specialTag}");
-
-                        ImGui.NextColumn();
-                        ImGui.Columns(1, "", false);
-                        var pop = true;
-
-                        if (!ImGui.BeginPopupModal(strId, ref pop,
-                                ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize))
-                            continue;
-
-                        var x = 0;
-
-                        foreach (var name in RenamedAllStashNames)
-                        {
-                            x++;
-
-                            if (ImGui.Button($"{name}", new Vector2N(100, 20)))
-                            {
-                                indexNode.Value = name;
-                                StashTabNameCoRoutine.OnSettingsStashNameChanged(indexNode, name);
-                                ImGui.CloseCurrentPopup();
-                            }
-
                             if (x % 10 != 0)
                                 ImGui.SameLine();
+                            x++;
+
+                            if (ImGui.Button($"{name}##{name}_local", new Vector2N(100, 20)))
+                            {
+                                StashTabNameCoRoutine.OnSettingsStashTargetChanged(target, $"[Local] {name}");
+                                ImGui.CloseCurrentPopup();
+                            }
                         }
-
-                        ImGui.Spacing();
-                        ImGuiNative.igIndent(350);
-                        if (ImGui.Button("Close", new Vector2N(100, 20)))
-                            ImGui.CloseCurrentPopup();
-
-                        ImGui.EndPopup();
                     }
-                    else
+
+                    // Show [Guild] section
+                    if (RenamedGuildStashNames != null && RenamedGuildStashNames.Count > 0)
                     {
-                        indexNode = new ListIndexNode { Value = "Ignore", Index = -1 };
+                        if (x % 10 != 0) ImGui.SameLine();
+                        ImGui.TextColored(new Vector4N(1f, 0.8f, 0.3f, 1f), "[Guild]");
+                        x++;
+
+                        foreach (var name in RenamedGuildStashNames)
+                        {
+                            if (x % 10 != 0)
+                                ImGui.SameLine();
+                            x++;
+
+                            if (ImGui.Button($"{name}##{name}_guild", new Vector2N(100, 20)))
+                            {
+                                StashTabNameCoRoutine.OnSettingsStashTargetChanged(target, $"[Guild] {name}");
+                                ImGui.CloseCurrentPopup();
+                            }
+                        }
                     }
+
+                    ImGui.Spacing();
+                    ImGuiNative.igIndent(350);
+                    if (ImGui.Button("Close", new Vector2N(100, 20)))
+                        ImGui.CloseCurrentPopup();
+
+                    ImGui.EndPopup();
+                }
             };
     }
 

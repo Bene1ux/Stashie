@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using ItemFilterLibrary;
 using Stashie.Classes;
 
@@ -16,7 +16,7 @@ public class CustomFilter : BaseFilter
         public bool? Affinity { get; set; }
         public string RawQuery { get; set; }
         public ItemQuery CompiledQuery { get; set; }
-        public ListIndexNode StashIndexNode { get; set; }
-        public bool AllowProcess => StashIndexNode.Index != -1;
+        public StashTarget Target { get; set; }
+        public bool AllowProcess => Target?.Index != -1;
     }
 }

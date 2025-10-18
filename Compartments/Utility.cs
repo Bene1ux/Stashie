@@ -30,21 +30,68 @@ internal class Utility
     public static void SetupOrClose()
     {
         SaveDefaultConfigsToDisk();
-        StashieCore.Main.SettingsListNodes = new List<ListIndexNode>(100);
+        StashieCore.Main.SettingsTargetNodes = new List<StashTarget>(100);
+        
+        // Migrate old settings to new format
+        MigrateLegacySettings();
+        
         FilterManager.LoadCustomFilters();
 
         try
         {
-            StashieCore.Main.Settings.TabToVisitWhenDone.Max =
-                (int)StashieCore.Main.StashElement.TotalStashes - 1;
-            var names = StashieCore.Main.StashElement.AllStashNames;
-            // Avoid wiping selections if names are not yet available
-            if (names != null && names.Count > 0)
-                StashTabNameCoRoutine.UpdateStashNames(names);
+            // Try to initialize personal stash names
+            var personalStash = StashieCore.Main.PersonalStashElement;
+            if (personalStash != null)
+            {
+                StashieCore.Main.Settings.TabToVisitWhenDone.Max =
+                    (int)personalStash.TotalStashes - 1;
+                var names = personalStash.AllStashNames;
+                if (names != null && names.Count > 0)
+                    StashTabNameCoRoutine.UpdateStashNames(names, false);
+            }
+            
+            // Try to initialize guild stash names if available
+            var guildStash = StashieCore.Main.GuildStashElement;
+            if (guildStash != null && guildStash.IsVisibleLocal)
+            {
+                var guildNames = guildStash.AllStashNames;
+                if (guildNames != null && guildNames.Count > 0)
+                    StashTabNameCoRoutine.UpdateStashNames(guildNames, true);
+            }
         }
         catch (Exception e)
         {
             StashieCore.Main.LogError($"Cant get stash names when init. {e}");
+        }
+    }
+    
+    private static void MigrateLegacySettings()
+    {
+        try
+        {
+            var settings = StashieCore.Main.Settings;
+            
+            // If we have old CustomFilterOptions but no new CustomFilterTargets, migrate
+            if (settings.CustomFilterOptions.Count > 0 && settings.CustomFilterTargets.Count == 0)
+            {
+                foreach (var kvp in settings.CustomFilterOptions)
+                {
+                    var oldNode = kvp.Value;
+                    var newTarget = new StashTarget
+                    {
+                        IsGuild = false, // All old settings assumed personal stash
+                        Index = oldNode.Index,
+                        Value = oldNode.Index == -1 ? "Ignore" : $"[Local] {oldNode.Value}"
+                    };
+                    settings.CustomFilterTargets[kvp.Key] = newTarget;
+                }
+                
+                StashieCore.Main.LogMessage($"Migrated {settings.CustomFilterOptions.Count} filter settings to new format.", 3);
+            }
+        }
+        catch (Exception e)
+        {
+            StashieCore.Main.LogError($"Error migrating legacy settings: {e}");
         }
     }
 
