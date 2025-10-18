@@ -72,6 +72,9 @@ public class StashieSettingsHandler
 
         Main.FilterTabs = null;
 
+        if (Main.currentFilter == null)
+            return;
+
         foreach (var parent in Main.currentFilter)
             Main.FilterTabs += () =>
             {

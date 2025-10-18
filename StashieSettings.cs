@@ -52,6 +52,9 @@ public class StashieSettings : ISettings
 
     [Menu("Keep Highest ID Scroll Stack")] public ToggleNode KeepHighestIDStack { get; set; } = new(false);
 
+    [Menu("Ignored Item Names", "Comma-separated list of item names to ignore from stashing and counting.")]
+    public TextNode IgnoredItemNames { get; set; } = new("");
+
     public int[,] IgnoredCells { get; set; } = new int[5, 12];
 
     public int[,] IgnoredExpandedCells { get; set; } = new int[5, 4];

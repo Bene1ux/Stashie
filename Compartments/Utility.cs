@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using ExileCore.PoEMemory.Elements;
 using Stashie.Classes;
 using static ExileCore.PoEMemory.MemoryObjects.ServerInventory;
 
@@ -27,14 +29,19 @@ internal class Utility
         streamWriter.Close();
     }
 
+    public static List<string> GetStashNames(StashElement stashElement)
+    {
+        return stashElement?.Inventories?.Select(i => i.TabName).ToList() ?? [];
+    }
+
     public static void SetupOrClose()
     {
         SaveDefaultConfigsToDisk();
         StashieCore.Main.SettingsTargetNodes = new List<StashTarget>(100);
-        
+
         // Migrate old settings to new format
         MigrateLegacySettings();
-        
+
         FilterManager.LoadCustomFilters();
 
         try
@@ -45,16 +52,16 @@ internal class Utility
             {
                 StashieCore.Main.Settings.TabToVisitWhenDone.Max =
                     (int)personalStash.TotalStashes - 1;
-                var names = personalStash.AllStashNames;
+                var names = GetStashNames(personalStash);
                 if (names != null && names.Count > 0)
                     StashTabNameCoRoutine.UpdateStashNames(names, false);
             }
-            
+
             // Try to initialize guild stash names if available
             var guildStash = StashieCore.Main.GuildStashElement;
             if (guildStash != null && guildStash.IsVisibleLocal)
             {
-                var guildNames = guildStash.AllStashNames;
+                var guildNames = GetStashNames(guildStash);
                 if (guildNames != null && guildNames.Count > 0)
                     StashTabNameCoRoutine.UpdateStashNames(guildNames, true);
             }
@@ -64,13 +71,13 @@ internal class Utility
             StashieCore.Main.LogError($"Cant get stash names when init. {e}");
         }
     }
-    
+
     private static void MigrateLegacySettings()
     {
         try
         {
             var settings = StashieCore.Main.Settings;
-            
+
             // If we have old CustomFilterOptions but no new CustomFilterTargets, migrate
             if (settings.CustomFilterOptions.Count > 0 && settings.CustomFilterTargets.Count == 0)
             {
@@ -85,8 +92,9 @@ internal class Utility
                     };
                     settings.CustomFilterTargets[kvp.Key] = newTarget;
                 }
-                
-                StashieCore.Main.LogMessage($"Migrated {settings.CustomFilterOptions.Count} filter settings to new format.", 3);
+
+                StashieCore.Main.LogMessage(
+                    $"Migrated {settings.CustomFilterOptions.Count} filter settings to new format.", 3);
             }
         }
         catch (Exception e)

@@ -100,6 +100,15 @@ internal class FilterManager
             if (Utility.CheckIgnoreCells(invItem, (12, 5), Main.Settings.IgnoredCells))
                 continue;
 
+            // Check if item name is ignored
+            var baseC = invItem.Item.GetComponent<ExileCore.PoEMemory.Components.Base>();
+            if (baseC != null && !string.IsNullOrWhiteSpace(Main.Settings.IgnoredItemNames.Value))
+            {
+                var ignoredNames = Main.Settings.IgnoredItemNames.Value.Split(',').Select(n => n.Trim()).ToArray();
+                if (ignoredNames.Contains(baseC.Name))
+                    continue;
+            }
+
             var testItem = new ItemData(invItem.Item, Main.GameController);
             var result = CheckFilters(testItem, invItem.GetClientRect().Center.ToVector2Num());
             if (result != null)

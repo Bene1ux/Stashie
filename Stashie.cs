@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using ExileCore;
 using ExileCore.PoEMemory;
 using ExileCore.PoEMemory.Elements;
@@ -223,6 +224,15 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
                 if (Utility.CheckIgnoreCells(invItem, (12, 5), Settings.IgnoredCells))
                     continue;
 
+                // Check if item name is ignored
+                var baseC = invItem.Item.GetComponent<ExileCore.PoEMemory.Components.Base>();
+                if (baseC != null && !string.IsNullOrWhiteSpace(Settings.IgnoredItemNames.Value))
+                {
+                    var ignoredNames = Settings.IgnoredItemNames.Value.Split(',').Select(n => n.Trim()).ToArray();
+                    if (ignoredNames.Contains(baseC.Name))
+                        continue;
+                }
+
                 var itemData = new ItemFilterLibrary.ItemData(invItem.Item, GameController);
                 
                 // Find matching filter
@@ -253,8 +263,7 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
                 if (tabIndex >= 0 && matchedTarget.Index != tabIndex)
                     continue;
 
-                // Add cell count
-                var baseC = invItem.Item.GetComponent<ExileCore.PoEMemory.Components.Base>();
+                // Add cell count (baseC already retrieved earlier)
                 if (baseC != null)
                     cells += baseC.ItemCellsSizeX * baseC.ItemCellsSizeY;
             }

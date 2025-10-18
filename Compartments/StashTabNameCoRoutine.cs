@@ -16,6 +16,27 @@ internal class StashTabNameCoRoutine
 
     public static void InitStashTabNameCoRoutine()
     {
+        // Initialize renamed lists from saved settings if they exist and aren't corrupted
+        if (Main.Settings.AllStashNames != null && Main.Settings.AllStashNames.Count > 0 && RenamedLocalStashNames == null)
+        {
+            // Only init if names look valid (not all the same/empty)
+            var uniqueNames = Main.Settings.AllStashNames.Distinct().Count();
+            if (uniqueNames > 1 || (uniqueNames == 1 && !string.IsNullOrWhiteSpace(Main.Settings.AllStashNames[0])))
+            {
+                UpdateStashNames(Main.Settings.AllStashNames, false);
+            }
+        }
+        
+        if (Main.Settings.AllGuildStashNames != null && Main.Settings.AllGuildStashNames.Count > 0 && RenamedGuildStashNames == null)
+        {
+            // Only init if names look valid (not all the same/empty)
+            var uniqueNames = Main.Settings.AllGuildStashNames.Distinct().Count();
+            if (uniqueNames > 1 || (uniqueNames == 1 && !string.IsNullOrWhiteSpace(Main.Settings.AllGuildStashNames[0])))
+            {
+                UpdateStashNames(Main.Settings.AllGuildStashNames, true);
+            }
+        }
+        
         TaskRunner.Run(StashTabNamesUpdater_Thread, StashTabsNameChecker);
     }
 
@@ -61,46 +82,39 @@ internal class StashTabNameCoRoutine
         }
 
         // Update all existing targets to match renamed tabs
+        if (Main.SettingsTargetNodes != null)
         foreach (var target in Main.SettingsTargetNodes)
             try
             {
                 if (target.IsGuild != isGuild) continue; // Only update matching type
                 
                 var targetList = isGuild ? RenamedGuildStashNames : RenamedLocalStashNames;
-                var inventoryIndex = targetList.IndexOf(target.Value.Replace("[Local] ", "").Replace("[Guild] ", ""));
-
-                if (inventoryIndex == -1) //If the value doesn't exist in list (renamed)
+                
+                // Trust the saved Index, just rebuild the display string
+                if (target.Index == -1)
                 {
-                    if (target.Index != -1) //If the value doesn't exist in list and the value was not Ignore
-                    {
-#if DebugMode
-                        Main.LogMessage($"Tab renamed: {target.Value}", 5);
-#endif
-                        if (target.Index >= targetList.Count)
-                        {
-                            target.Index = -1;
-                            target.Value = "Ignore";
-                        }
-                        else if (target.Index >= 0)
-                        {
-                            target.Value = isGuild 
-                                ? $"[Guild] {targetList[target.Index]}" 
-                                : $"[Local] {targetList[target.Index]}";
-                        }
-                    }
+                    target.Value = "Ignore";
                 }
-                else //tab just changed index
+                else if (target.Index >= 0 && target.Index < targetList.Count)
                 {
-#if DebugMode
-                    if (target.Index != inventoryIndex)
-                    {
-                        Main.LogMessage($"Tab moved: {target.Index} to {inventoryIndex}", 5);
-                    }
-#endif
-                    target.Index = inventoryIndex;
+                    // Valid index, update display value
                     target.Value = isGuild 
-                        ? $"[Guild] {targetList[inventoryIndex]}" 
-                        : $"[Local] {targetList[inventoryIndex]}";
+                        ? $"[Guild] {targetList[target.Index]}" 
+                        : $"[Local] {targetList[target.Index]}";
+#if DebugMode
+                    Main.LogMessage($"Updated target: Index {target.Index} → {target.Value}", 5);
+#endif
+                }
+                else
+                {
+                    // Index out of bounds (tab was removed or not loaded yet)
+#if DebugMode
+                    Main.LogMessage($"Target Index {target.Index} out of bounds for {(isGuild ? "guild" : "local")} stash (count: {targetList.Count})", 5);
+#endif
+                    // Don't reset to Ignore! Keep the index, it might become valid when stash loads
+                    target.Value = isGuild 
+                        ? $"[Guild] Tab {target.Index} (Not Loaded)" 
+                        : $"[Local] Tab {target.Index} (Not Loaded)";
                 }
             }
             catch (Exception e)
@@ -171,9 +185,14 @@ internal class StashTabNameCoRoutine
             if (personalStash != null && personalStash.IsVisibleLocal)
             {
                 var cachedNames = Main.Settings.AllStashNames;
-                var realNames = personalStash.AllStashNames;
+                var realNames = Utility.GetStashNames(personalStash);
 
-                if (realNames.Count != cachedNames.Count)
+                // Always update if the renamed list is null/empty (first time or after reset)
+                if (RenamedLocalStashNames == null || RenamedLocalStashNames.Count == 0)
+                {
+                    UpdateStashNames(realNames, false);
+                }
+                else if (realNames.Count != cachedNames.Count)
                 {
                     UpdateStashNames(realNames, false);
                 }
@@ -194,9 +213,14 @@ internal class StashTabNameCoRoutine
             if (guildStash != null && guildStash.IsVisibleLocal)
             {
                 var cachedGuildNames = Main.Settings.AllGuildStashNames;
-                var realGuildNames = guildStash.AllStashNames;
+                var realGuildNames = Utility.GetStashNames(guildStash);
 
-                if (realGuildNames.Count != cachedGuildNames.Count)
+                // Always update if the renamed list is null/empty (first time or after reset)
+                if (RenamedGuildStashNames == null || RenamedGuildStashNames.Count == 0)
+                {
+                    UpdateStashNames(realGuildNames, true);
+                }
+                else if (realGuildNames.Count != cachedGuildNames.Count)
                 {
                     UpdateStashNames(realGuildNames, true);
                 }
