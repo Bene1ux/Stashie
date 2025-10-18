@@ -46,24 +46,44 @@ internal class Utility
 
         try
         {
-            // Try to initialize personal stash names
+            // Try to initialize personal stash metadata
             var personalStash = StashieCore.Main.PersonalStashElement;
             if (personalStash != null)
             {
                 StashieCore.Main.Settings.TabToVisitWhenDone.Max =
                     (int)personalStash.TotalStashes - 1;
+                
+                // Only update names if they look valid (not all empty/corrupted)
                 var names = GetStashNames(personalStash);
-                if (names != null && names.Count > 0)
+                StashieCore.Main.LogMessage($"[INIT] Read {names?.Count ?? 0} personal stash names. First 5: [{string.Join(", ", names?.Take(5) ?? [])}]", 3);
+                
+                if (names != null && names.Count > 0 && !names.All(string.IsNullOrWhiteSpace))
+                {
+                    StashieCore.Main.LogMessage($"[INIT] Validation passed, calling UpdateStashNames for personal stash", 3);
                     StashTabNameCoRoutine.UpdateStashNames(names, false);
+                }
+                else
+                {
+                    StashieCore.Main.LogMessage($"[INIT] Validation failed, skipping UpdateStashNames. AllEmpty: {names?.All(string.IsNullOrWhiteSpace) ?? true}", 3);
+                }
             }
 
-            // Try to initialize guild stash names if available
+            // Try to initialize guild stash if available
             var guildStash = StashieCore.Main.GuildStashElement;
             if (guildStash != null && guildStash.IsVisibleLocal)
             {
                 var guildNames = GetStashNames(guildStash);
-                if (guildNames != null && guildNames.Count > 0)
+                StashieCore.Main.LogMessage($"[INIT] Read {guildNames?.Count ?? 0} guild stash names. First 5: [{string.Join(", ", guildNames?.Take(5) ?? [])}]", 3);
+                
+                if (guildNames != null && guildNames.Count > 0 && !guildNames.All(string.IsNullOrWhiteSpace))
+                {
+                    StashieCore.Main.LogMessage($"[INIT] Validation passed, calling UpdateStashNames for guild stash", 3);
                     StashTabNameCoRoutine.UpdateStashNames(guildNames, true);
+                }
+                else
+                {
+                    StashieCore.Main.LogMessage($"[INIT] Validation failed, skipping UpdateStashNames. AllEmpty: {guildNames?.All(string.IsNullOrWhiteSpace) ?? true}", 3);
+                }
             }
         }
         catch (Exception e)

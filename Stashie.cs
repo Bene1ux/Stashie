@@ -122,6 +122,8 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
         {
             StashieSettingsHandler.FilePicker();
             base.DrawSettings();
+            // Ensure the stash tab dropdown reflects the latest names every frame
+            StashieSettingsHandler.GenerateTabMenu();
             FilterTabs?.Invoke();
         }
 
