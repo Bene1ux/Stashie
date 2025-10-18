@@ -20,6 +20,15 @@ internal class StashTabNameCoRoutine
 
     public static void UpdateStashNames(ICollection<string> newNames)
     {
+        // Guard against transient empty lists (e.g., stash briefly unavailable)
+        if (newNames == null || newNames.Count == 0)
+        {
+#if DebugMode
+            Main.LogMessage("Stashie: received empty stash names list, skipping update.", 3);
+#endif
+            return;
+        }
+
         Main.Settings.AllStashNames = [.. newNames];
 
         if (newNames.Count < 4 && !Main.Settings.UseGuildStash.Value)

@@ -38,7 +38,9 @@ internal class Utility
             StashieCore.Main.Settings.TabToVisitWhenDone.Max =
                 (int)StashieCore.Main.StashElement.TotalStashes - 1;
             var names = StashieCore.Main.StashElement.AllStashNames;
-            StashTabNameCoRoutine.UpdateStashNames(names);
+            // Avoid wiping selections if names are not yet available
+            if (names != null && names.Count > 0)
+                StashTabNameCoRoutine.UpdateStashNames(names);
         }
         catch (Exception e)
         {
