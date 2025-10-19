@@ -50,6 +50,9 @@ internal class StashTabNameCoRoutine
             return;
         }
 
+        // Capture old renamed list before rebuilding, to detect reorders
+        var oldRenamed = isGuild ? RenamedGuildStashNames : RenamedLocalStashNames;
+
         var renamedList = new List<string>();
         var existingNames = new HashSet<string>();
 
@@ -66,6 +69,61 @@ internal class StashTabNameCoRoutine
             renamedList.Add(realStashName ?? "%NULL%");
         }
 
+        // Build mapping oldIndex -> newIndex by name (stable pairing for duplicates)
+        var indexMapping = new Dictionary<int, int>();
+        var anyReordered = false;
+        var anyRenamed = false;
+        if (oldRenamed != null && oldRenamed.Count > 0)
+        {
+            // Helper: strip trailing " (n)" if present
+            static string BaseName(string s)
+            {
+                if (string.IsNullOrEmpty(s)) return s;
+                var open = s.LastIndexOf(" (", StringComparison.Ordinal);
+                if (open > -1 && s.EndsWith(")") && int.TryParse(s.Substring(open + 2, s.Length - open - 3), out _))
+                    return s.Substring(0, open);
+                return s;
+            }
+
+            // Build queues of new indices for each base name
+            var newQueues = new Dictionary<string, Queue<int>>();
+            for (var i = 0; i < renamedList.Count; i++)
+            {
+                var b = BaseName(renamedList[i]);
+                if (!newQueues.TryGetValue(b, out var q)) newQueues[b] = q = new Queue<int>();
+                q.Enqueue(i);
+            }
+
+            for (var oldIdx = 0; oldIdx < oldRenamed.Count; oldIdx++)
+            {
+                var oldName = oldRenamed[oldIdx];
+                var b = BaseName(oldName);
+                if (newQueues.TryGetValue(b, out var q) && q.Count > 0)
+                {
+                    var newIdx = q.Dequeue();
+                    indexMapping[oldIdx] = newIdx;
+                    if (newIdx != oldIdx) anyReordered = true;
+                    if (!string.Equals(oldName, renamedList[newIdx], StringComparison.Ordinal)) anyRenamed = true;
+                }
+                else
+                {
+                    // Name disappeared; treat as rename to nearest candidate by index
+                    var nearest = Math.Min(oldIdx, renamedList.Count - 1);
+                    if (nearest >= 0)
+                    {
+                        indexMapping[oldIdx] = nearest;
+                        anyRenamed = true;
+                        if (nearest != oldIdx) anyReordered = true;
+                    }
+                }
+            }
+        }
+
+        if (anyReordered)
+            Main.LogMessage($"Stashie: detected stash tab reorder ({(isGuild ? "Guild" : "Local")}). Remapping indices.", 3);
+        if (anyRenamed)
+            Main.LogMessage($"Stashie: detected stash tab rename(s) ({(isGuild ? "Guild" : "Local")}).", 3);
+
         if (isGuild)
         {
             Main.Settings.AllGuildStashNames = [.. newNames];
@@ -77,23 +135,25 @@ internal class StashTabNameCoRoutine
             RenamedLocalStashNames = renamedList;
         }
 
-        // Update all existing targets to match renamed tabs
+        // Update all existing targets to match renamed/moved tabs
         if (Main.SettingsTargetNodes != null)
             foreach (var target in Main.SettingsTargetNodes)
                 try
                 {
                     if (target.IsGuild != isGuild) continue; // Only update matching type
 
+                    // If we detected a reorder, remap the index
+                    if (indexMapping.TryGetValue(target.Index, out var remapped))
+                        target.Index = remapped;
+
                     var targetList = isGuild ? RenamedGuildStashNames : RenamedLocalStashNames;
 
-                    // Trust the saved Index, just rebuild the display string
                     if (target.Index == -1)
                     {
                         target.Value = "Ignore";
                     }
                     else if (target.Index >= 0 && target.Index < targetList.Count)
                     {
-                        // Valid index, update display value
                         target.Value = isGuild
                             ? $"[Guild] {targetList[target.Index]}"
                             : $"[Local] {targetList[target.Index]}";
@@ -101,7 +161,6 @@ internal class StashTabNameCoRoutine
                     else
                     {
                         // Index out of bounds (tab was removed or not loaded yet)
-                        // Don't reset to Ignore! Keep the index, it might become valid when stash loads
                         target.Value = isGuild
                             ? $"[Guild] Tab {target.Index} (Not Loaded)"
                             : $"[Local] Tab {target.Index} (Not Loaded)";
